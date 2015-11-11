@@ -1,5 +1,8 @@
 package org.dmlc.mxnet;
 
+import android.graphics.Bitmap;
+import android.graphics.Color;
+
 public class Predictor {
   static {
     System.load("mxnet_predict");
@@ -34,7 +37,7 @@ public class Predictor {
   private long handle = 0;
 
   public Predictor(byte[] symbol, byte[] params, Device dev, InputNode[] input) {
-	String[] keys = new String[input.length]; 
+	String[] keys = new String[input.length];
 	int[][] shapes = new int[input.length][];
 	for (int i=0; i<input.length; ++i) {
 		keys[i] = input[i].key;
@@ -59,7 +62,26 @@ public class Predictor {
   public void forward(String key, float[] input) {
       if (this.handle <= 0) return;
       nativeForward(this.handle, key, input);
+  }
+
+  static public byte[] inputFromImage(Bitmap bmp) {
+    int width = bmp.getWidth();
+    int height = bmp.getHeight();
+    int[] pixels = new int[ height * width ];
+    bmp.getPixels(pixels, 0, width, 0, 0, height, width);
+
+    byte[] buf = new byte[height * width * 3];
+    for (int i=0; i<height; i++) {
+      for (int j=0; j<width; j++) {
+          int pixel = pixels[i * width + j];
+          buf[i * width + j] = (byte)Color.red(pixel);
+          buf[width * height + i * width + j] = (byte)Color.green(pixel);
+          buf[width * height * 2 + i * width + j] = (byte)Color.blue(pixel);
+      }
     }
+
+    return buf;
+  }
 
   private native static long createPredictor(byte[] symbol, byte[] params, int devType, int devId, String[] keys, int[][] shapes);
   private native static void nativeFree(long handle);
