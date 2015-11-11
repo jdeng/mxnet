@@ -64,19 +64,29 @@ public class Predictor {
       nativeForward(this.handle, key, input);
   }
 
-  static public byte[] inputFromImage(Bitmap bmp) {
-    int width = bmp.getWidth();
-    int height = bmp.getHeight();
-    int[] pixels = new int[ height * width ];
-    bmp.getPixels(pixels, 0, width, 0, 0, height, width);
+  static public float[] inputFromImage(Bitmap[] bmps, int meanR, int meanG, int meanB) {
+    if (bmps.length == 0) return null;
 
-    byte[] buf = new byte[height * width * 3];
-    for (int i=0; i<height; i++) {
-      for (int j=0; j<width; j++) {
-          int pixel = pixels[i * width + j];
-          buf[i * width + j] = (byte)Color.red(pixel);
-          buf[width * height + i * width + j] = (byte)Color.green(pixel);
-          buf[width * height * 2 + i * width + j] = (byte)Color.blue(pixel);
+    int width = bmps[0].getWidth();
+    int height = bmps[0].getHeight();
+    float[] buf = new float[height * width * 3 * bmps.length];
+    for (int x=0; x<bmps.length; x++) {
+      Bitmap bmp = bmps[x];
+      if (bmp.getWidth() != width || bmp.getHeight() != height)
+        return null;
+
+      int[] pixels = new int[ height * width ];
+      bmp.getPixels(pixels, 0, width, 0, 0, height, width);
+
+      int start = width * height * 3 * x;
+      for (int i=0; i<height; i++) {
+        for (int j=0; j<width; j++) {
+            int pos = i * width + j;
+            int pixel = pixels[pos];
+            buf[start + pos] = Color.red(pixel) - meanR;
+            buf[start + width * height + pos] = Color.green(pixel) - meanG;
+            buf[start + width * height * 2 + pos] = Color.blue(pixel) - meanB;
+        }
       }
     }
 
